@@ -1,16 +1,10 @@
 <?php
-/*
-description of table `tb_device`
-id 			int
-name 		varchar(20)
-tags 		varchar(50)
-about 		varchar(100)
-locate 		varchar(50)
-user_id		int
-create_time int
-update_time int
-status 		tinyint
-*/
+
+/**
+ * Enter description here ...
+ * @author mains2114
+ *
+ */
 class Device_model extends CI_Model
 {
 
