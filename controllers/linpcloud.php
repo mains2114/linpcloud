@@ -73,9 +73,8 @@ class Linpcloud extends REST_Controller
 		$this->response(array('result'=>'delete success','deviceid'=>$device_id), 200);
 	}
 
-	function devices_get()
+	function devices_get($user_id)
 	{
-		$user_id = $this->get('userid');
 		$data = $this->device_model->get_devices($user_id);
 		if($data===FALSE)
 		$this->response(array('error'=>'no device found'),400);
