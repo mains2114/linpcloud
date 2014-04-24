@@ -158,6 +158,8 @@ class Linpcloud extends REST_Controller
 
 	public function user_get()
 	{
+		$data = array('apikey'=>md5('123456'.time()));
+		$this->response($data,200);
 	}
 	
 	public function user_post()

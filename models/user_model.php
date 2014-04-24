@@ -59,6 +59,6 @@ class User_model extends CI_Model
 	
 	public function generate_apikey($userid)
 	{
-	
+		
 	}
 }
