@@ -204,7 +204,7 @@ abstract class REST_Controller extends CI_Controller
 		$this->response = new stdClass();
 		$this->rest = new stdClass();
 
-		//$this->_zlib_oc = @ini_get('zlib.output_compression');
+		/* $this->_zlib_oc = @ini_get('zlib.output_compression'); */
 
 		// Lets grab the config and get ready to party
 		$this->load->config('rest');

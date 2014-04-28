@@ -225,7 +225,7 @@ class Linpcloud extends REST_Controller
 	{
 		$username = $this->post('username');
 		$password = $this->post('password');
-		$result = $this->user_model->check_pwd($username, $password);
+		$result = $this->user_model->check_pwd_by_name($username, $password);
 		
 		if ($result !== FALSE)
 		{
