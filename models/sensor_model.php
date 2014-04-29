@@ -78,7 +78,7 @@ class Sensor_model extends CI_Model
 
 	public function get_sensors($device_id)
 	{
-		$sql = "SELECT * FROM `tb_sensor` WHERE `deviceid`='$device_id' AND `status`=1";
+		$sql = "SELECT * FROM `tb_sensor` WHERE `device_id`='$device_id' AND `status`=1";
 		$result = $this->db->query($sql);
 		if ($result->num_rows() > 0)
 		{

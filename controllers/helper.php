@@ -20,18 +20,18 @@ class Helper extends REST_Controller
 		);
 		$this->response($data,200);
 	}
-	public function apikey_get($userid = FALSE)
+	public function apikey_get($user_id = FALSE)
 	{
-		if(!is_numeric($userid))
-			$this->response(array('msg'=>'Invalid userid'), 400);
+		if(!is_numeric($user_id))
+			$this->response(array('msg'=>'Invalid user_id'), 400);
 		else
 		{
 			$this->load->model('user_model');
-			$result = $this->user_model->generate_apikey($userid);
+			$result = $this->user_model->generate_apikey($user_id);
 			if($result === FALSE)
 				$this->response(array('msg'=>'Generate apikey fail'), 400);
 			else
-				$this->response(array('userid'=>$userid,'apikey'=>$result), 200);
+				$this->response(array('user_id'=>$user_id,'apikey'=>$result), 200);
 		}
 	}
 

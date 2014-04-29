@@ -16,6 +16,7 @@ class Device_model extends CI_Model
 	/**
 	 * create a device
 	 * $data is an array organized by controller
+	 * 
 	 * @return boolean FALSE or last insert ID
 	 */
 	public function create($data)
@@ -32,9 +33,16 @@ class Device_model extends CI_Model
 		}
 	}
 
+	/**
+	 * get info of a specific device
+	 * if `status`=0, we treat it as deleted, and don't deal with it
+	 * 
+	 * @param int $device_id
+	 * @return boolean FALSE | array
+	 */
 	public function get($device_id)
 	{
-		$sql = "SELECT * FROM `tb_device` WHERE `id`='$device_id'";
+		$sql = "SELECT * FROM `tb_device` WHERE `id`='$device_id' AND  `status`=1";
 		$result = $this->db->query($sql);
 		if ($result->num_rows > 0)
 		{
@@ -51,6 +59,15 @@ class Device_model extends CI_Model
 
 	}
 
+	/**
+	 * we provide user a chance to regret, so we don't truely delete a device 
+	 * when this method is called by users
+	 * we may physical delete after some time if you don't recover it
+	 * the amount of time is not determined yet
+	 * 
+	 * @param int $device_id
+	 * @return boolean
+	 */
 	public function delete($device_id)
 	{
 		if($device_id == FALSE)
@@ -69,9 +86,14 @@ class Device_model extends CI_Model
 			return FALSE;
 	}
 
+	/**
+	 * get all devices owned by the user
+	 * @param int $user_id
+	 * @return boolean FALSE | array
+	 */
 	public function get_devices($user_id)
 	{
-		$sql = "SELECT * FROM `tb_device` WHERE `userid`='$user_id' AND `status`=1";
+		$sql = "SELECT * FROM `tb_device` WHERE `user_id`='$user_id' AND `status`=1";
 		$result = $this->db->query($sql);
 		if ($result->num_rows() > 0)
 		{
