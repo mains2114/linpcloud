@@ -88,7 +88,8 @@ class Linpcloud extends REST_Controller
 
 	/**
 	 * update device info
-	 * @param int $device_id
+	 *
+	 * @param int $device_id        	
 	 */
 	public function device_put($device_id)
 	{
@@ -187,22 +188,22 @@ class Linpcloud extends REST_Controller
 			$this->response($data, 200);
 	}
 
+	/**
+	 * get info of a specific sensor
+	 * check whether this sensor belong to the user
+	 *
+	 * @param int $sensor_id        	
+	 */
 	public function sensor_get($sensor_id)
 	{
-		$sensor_id = $this->get('sensorid');
-		$data = $this->sensor_model->get($sensor_id);
-		if ($data === FALSE)
-		{
-			$this->response(array (
-					'error' => 'sensor not found!'
-			), 400);
-		}
-		else
-		{
-			$this->response($data, 200);
-		}
+		$data = $this->_check_sensor($sensor_id);
+		
+		$this->response($data, 200);
 	}
 
+	/**
+	 * create a new sensor
+	 */
 	public function sensor_post()
 	{
 		if ($this->post('name') == FALSE)
@@ -223,7 +224,9 @@ class Linpcloud extends REST_Controller
 					'error' => 'Field `device_id` required'
 			), 400);
 		}
-		// we should also check whether device_id is valid
+		
+		$device_id = $this->post('device_id');
+		$this->_check_device($device_id);
 		
 		$input = array (
 				'id' => NULL,
@@ -239,7 +242,9 @@ class Linpcloud extends REST_Controller
 		$result = $this->sensor_model->create($input);
 		if ($result === FALSE)
 		{
-			$this->response(NULL, 400);
+			$this->response(array (
+					'info' => 'sensor created fail'
+			), 400);
 		}
 		else
 		{
@@ -250,31 +255,90 @@ class Linpcloud extends REST_Controller
 		}
 	}
 
+	/**
+	 * update sensor info
+	 *
+	 * @param int $sensor_id        	
+	 */
 	public function sensor_put($sensor_id)
 	{
+		if ($this->put('name') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `name` required'
+			), 400);
+		}
+		if ($this->put('type') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `type` required'
+			), 400);
+		}
+		if ($this->put('device_id') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `device_id` required'
+			), 400);
+		}
+		
+		$device_id = $this->put('device_id');
+		$this->_check_sensor($sensor_id, $device_id);
+		
+		$input = array (
+				'name' => $this->put('name'),
+				'type' => $this->put('type'),
+				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
+				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
+				'device_id' => $this->put('device_id'),
+				'last_update' => time()
+		);
+		
+		$result = $this->sensor_model->update($sensor_id, $input);
+		if ($result === FALSE)
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` update fail"
+			), 400);
+		}
+		else
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` update success"
+			), 200);
+		}
 	}
 
+	/**
+	 * logically delete a sensor by change status to '0'
+	 * 
+	 * @param int $sensor_id        	
+	 */
 	public function sensor_delete($sensor_id)
 	{
+		$this->_check_sensor($sensor_id);
+		
 		$result = $this->sensor_model->delete($sensor_id);
 		if ($result == FALSE)
 			$this->response(array (
-					'error' => 'delete fail'
+					'info' => "delete sensor `$sensor_id` fail"
 			), 400);
 		else
 			$this->response(array (
-					'result' => 'delete success',
-					'sensorid' => $sensor_id
+					'info' => "delete sensor `$sensor_id` success"
 			), 200);
 	}
 
+	/**
+	 * get all sensors under the specific device
+	 * 
+	 * @param int $device_id        	
+	 */
 	public function sensors_get($device_id)
 	{
 		$data = $this->sensor_model->get_sensors($device_id);
 		if ($data === FALSE)
 			$this->response(array (
-					'error' => 'no sensor found',
-					'device_id' => $device_id
+					'info' => "no sensors found in device `$device_id`"
 			), 400);
 		else
 			$this->response($data, 200);
@@ -347,6 +411,11 @@ class Linpcloud extends REST_Controller
 		$this->response($data, 200);
 	}
 
+	/**
+	 * check apikey in the header, and get user_id
+	 *
+	 * @return int user_id
+	 */
 	function _check_apikey()
 	{
 		$apikey = $this->input->get_request_header('Apikey');
@@ -366,5 +435,63 @@ class Linpcloud extends REST_Controller
 		}
 		
 		return $result['id'];
+	}
+
+	/**
+	 * check if device belongs to the specific user
+	 *
+	 * @param int $device_id        	
+	 * @param int $user_id        	
+	 * @return boolean TRUE | exit
+	 */
+	function _check_device($device_id)
+	{
+		$user_id = $this->_check_apikey();
+		
+		$result = $this->device_model->get($device_id);
+		if ($result === FALSE)
+		{
+			$this->response(array (
+					'info' => "device `$device_id` not found"
+			), 400);
+		}
+		
+		if ($result['user_id'] != $user_id)
+		{
+			$this->response(array (
+					'info' => "device `$device_id` out of your permission"
+			), 400);
+		}
+		
+		return TRUE;
+	}
+
+	/**
+	 * check if sensor belong to the specific user
+	 * or check if this sensors belong to the specific device
+	 *
+	 * @param int $sensor_id        	
+	 * @return boolean array | exit
+	 */
+	function _check_sensor($sensor_id, $device_id = FALSE)
+	{
+		$result = $this->sensor_model->get($sensor_id);
+		if ($result === FALSE)
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` not found!"
+			), 400);
+		}
+		
+		if ($device_id !== FALSE && $device_id != $result['device_id'])
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` do not belong to device `$device_id`!"
+			), 400);
+		}
+		
+		$this->_check_device($result['device_id']);
+		
+		return $result;
 	}
 }

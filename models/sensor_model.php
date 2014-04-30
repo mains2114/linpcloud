@@ -41,7 +41,7 @@ class Sensor_model extends CI_Model
 
 	public function get($sensor_id)
 	{
-		$sql = "SELECT * FROM `tb_sensor` WHERE `id`='$sensor_id'";
+		$sql = "SELECT * FROM `tb_sensor` WHERE `id`='$sensor_id' AND `status`='1'";
 		$result = $this->db->query($sql);
 		if ($result->num_rows > 0)
 		{
@@ -53,9 +53,15 @@ class Sensor_model extends CI_Model
 		}
 	}
 
-	public function update($sensor_id)
+	public function update($sensor_id, $data)
 	{
-
+		$where = "`id`='$sensor_id'";
+		$sql = $this->db->update_string('tb_sensor', $data, $where);
+		$result = $this->db->query($sql);
+		if ($this->db->affected_rows() > 0)
+			return TRUE;
+		else 
+			return FALSE;
 	}
 
 	public function delete($sensor_id)
