@@ -20,7 +20,7 @@ class Linpcloud extends REST_Controller
 	 *
 	 * @param int $device_id        	
 	 */
-	function device_get($device_id)
+	public function device_get($device_id)
 	{
 		$user_id = $this->_check_apikey();
 		
@@ -50,14 +50,14 @@ class Linpcloud extends REST_Controller
 	 * `user_id` valid
 	 * of course, we should check apikey first
 	 */
-	function device_post()
+	public function device_post()
 	{
 		$user_id = $this->_check_apikey();
 		
 		if ($this->post('name') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `name` required'
+					'info' => 'Field `name` required'
 			), 400);
 		}
 		
@@ -86,16 +86,56 @@ class Linpcloud extends REST_Controller
 		}
 	}
 
-	function device_put($device_id)
+	/**
+	 * update device info
+	 * @param int $device_id
+	 */
+	public function device_put($device_id)
 	{
+		$user_id = $this->_check_apikey();
+		
+		if ($user_id != $this->put('user_id'))
+		{
+			$this->response(array (
+					'info' => 'out of your permission'
+			), 400);
+		}
+		
+		if ($this->put('name') == FALSE)
+		{
+			$this->response(array (
+					'info' => 'Field `name` required'
+			), 400);
+		}
+		
+		$input = array (
+				'name' => $this->put('name'),
+				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
+				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
+				'locate' => ($this->put('locate') == FALSE) ? NULL : $this->put('locate'),
+				'update_time' => time()
+		);
+		$result = $this->device_model->update($device_id, $input);
+		if ($result === TRUE)
+		{
+			$this->response(array (
+					'info' => 'update info success'
+			), 200);
+		}
+		else
+		{
+			$this->response(array (
+					'info' => 'update info fail'
+			), 400);
+		}
 	}
 
 	/**
 	 * delete a device by method DELETE
-	 * 
+	 *
 	 * @param int $device_id        	
 	 */
-	function device_delete($device_id)
+	public function device_delete($device_id)
 	{
 		$user_id = $this->_check_apikey();
 		
@@ -134,7 +174,7 @@ class Linpcloud extends REST_Controller
 	 * Get devices list owned by the user
 	 * get userid by apikey
 	 */
-	function devices_get()
+	public function devices_get()
 	{
 		$user_id = $this->_check_apikey();
 		
@@ -147,7 +187,7 @@ class Linpcloud extends REST_Controller
 			$this->response($data, 200);
 	}
 
-	function sensor_get($sensor_id)
+	public function sensor_get($sensor_id)
 	{
 		$sensor_id = $this->get('sensorid');
 		$data = $this->sensor_model->get($sensor_id);
@@ -163,7 +203,7 @@ class Linpcloud extends REST_Controller
 		}
 	}
 
-	function sensor_post()
+	public function sensor_post()
 	{
 		if ($this->post('name') == FALSE)
 		{
@@ -210,11 +250,11 @@ class Linpcloud extends REST_Controller
 		}
 	}
 
-	function sensor_put($sensor_id)
+	public function sensor_put($sensor_id)
 	{
 	}
 
-	function sensor_delete($sensor_id)
+	public function sensor_delete($sensor_id)
 	{
 		$result = $this->sensor_model->delete($sensor_id);
 		if ($result == FALSE)
@@ -228,7 +268,7 @@ class Linpcloud extends REST_Controller
 			), 200);
 	}
 
-	function sensors_get($device_id)
+	public function sensors_get($device_id)
 	{
 		$data = $this->sensor_model->get_sensors($device_id);
 		if ($data === FALSE)

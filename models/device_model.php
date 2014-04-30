@@ -16,7 +16,7 @@ class Device_model extends CI_Model
 	/**
 	 * create a device
 	 * $data is an array organized by controller
-	 * 
+	 *
 	 * @return boolean FALSE or last insert ID
 	 */
 	public function create($data)
@@ -36,8 +36,8 @@ class Device_model extends CI_Model
 	/**
 	 * get info of a specific device
 	 * if `status`=0, we treat it as deleted, and don't deal with it
-	 * 
-	 * @param int $device_id
+	 *
+	 * @param int $device_id        	
 	 * @return boolean FALSE | array
 	 */
 	public function get($device_id)
@@ -54,33 +54,39 @@ class Device_model extends CI_Model
 		}
 	}
 
-	public function update($device_id)
+	public function update($device_id, $data)
 	{
-
+		$where = "`id`='$device_id'";
+		$sql = $this->db->update_string('tb_device', $data, $where);
+		$result = $this->db->query($sql);
+		if ($this->db->affected_rows() > 0)
+			return TRUE;
+		else 
+			return FALSE;
 	}
 
 	/**
-	 * we provide user a chance to regret, so we don't truely delete a device 
+	 * we provide user a chance to regret, so we don't truely delete a device
 	 * when this method is called by users
 	 * we may physical delete after some time if you don't recover it
 	 * the amount of time is not determined yet
-	 * 
-	 * @param int $device_id
+	 *
+	 * @param int $device_id        	
 	 * @return boolean
 	 */
 	public function delete($device_id)
 	{
-		if($device_id == FALSE)
+		if ($device_id == FALSE)
 			return FALSE;
 		
 		$where = "`id`='$device_id'";
-		$data = array(
-			'update_time' => time(),
-			'status' => 0
+		$data = array (
+				'update_time' => time(),
+				'status' => 0
 		);
 		$sql = $this->db->update_string('tb_device', $data, $where);
 		$this->db->query($sql);
-		if($this->db->affected_rows() > 0)
+		if ($this->db->affected_rows() > 0)
 			return TRUE;
 		else
 			return FALSE;
@@ -88,7 +94,8 @@ class Device_model extends CI_Model
 
 	/**
 	 * get all devices owned by the user
-	 * @param int $user_id
+	 *
+	 * @param int $user_id        	
 	 * @return boolean FALSE | array
 	 */
 	public function get_devices($user_id)
