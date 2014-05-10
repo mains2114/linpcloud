@@ -53,7 +53,7 @@ class Linpcloud extends REST_Controller
 		else
 		{
 			$data = array (
-					'id' => $result
+					'device_id' => $result
 			);
 			$this->response($data, 200);
 		}
@@ -112,14 +112,7 @@ class Linpcloud extends REST_Controller
 	 */
 	public function device_put($device_id)
 	{
-		$user_id = $this->_check_apikey();
-		
-		if ($user_id != $this->put('user_id'))
-		{
-			$this->response(array (
-					'info' => 'out of your permission'
-			), 400);
-		}
+		$this->_check_device($device_id);
 		
 		if ($this->put('name') == FALSE)
 		{
@@ -139,13 +132,13 @@ class Linpcloud extends REST_Controller
 		if ($result === TRUE)
 		{
 			$this->response(array (
-					'info' => 'update info success'
+					'info' => "delete `$device_id` info success"
 			), 200);
 		}
 		else
 		{
 			$this->response(array (
-					'info' => 'update info fail'
+					'info' => "update `$device_id` info fail"
 			), 400);
 		}
 	}
@@ -157,20 +150,13 @@ class Linpcloud extends REST_Controller
 	 */
 	public function device_delete($device_id)
 	{
-		$user_id = $this->_check_apikey();
+		$this->_check_device($device_id);
 		
 		$info = $this->device_model->get($device_id);
 		if ($info === FALSE)
 		{
 			$this->response(array (
-					'info' => 'device not found'
-			), 400);
-		}
-		
-		if ($info['user_id'] != $user_id)
-		{
-			$this->response(array (
-					'info' => 'out of your permission'
+					'info' => "delete `$device_id` not found"
 			), 400);
 		}
 		
@@ -178,102 +164,16 @@ class Linpcloud extends REST_Controller
 		if ($result === FALSE)
 		{
 			$this->response(array (
-					'info' => 'delete fail'
+					'info' => "delete `$device_id` fail"
 			), 400);
 		}
 		else
 		{
 			$this->response(array (
-					'info' => 'delete success',
+					'info' => "delete `$device_id` success",
 					'device_id' => $device_id
 			), 200);
 		}
-	}
-	
-	/**
-	 * get info of a specific sensor
-	 * check whether this sensor belong to the user
-	 *
-	 * @param int $sensor_id        	
-	 */
-	public function sensor_get($sensor_id)
-	{
-		$data = $this->_check_sensor($sensor_id);
-		
-		$this->response($data, 200);
-	}
-
-	/**
-	 * update sensor info
-	 *
-	 * @param int $sensor_id        	
-	 */
-	public function sensor_put($sensor_id)
-	{
-		if ($this->put('name') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `name` required'
-			), 400);
-		}
-		if ($this->put('type') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `type` required'
-			), 400);
-		}
-		if ($this->put('device_id') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `device_id` required'
-			), 400);
-		}
-		
-		$device_id = $this->put('device_id');
-		$this->_check_sensor($sensor_id, $device_id);
-		
-		$input = array (
-				'name' => $this->put('name'),
-				'type' => $this->put('type'),
-				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
-				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
-				'device_id' => $this->put('device_id'),
-				'last_update' => time()
-		);
-		
-		$result = $this->sensor_model->update($sensor_id, $input);
-		if ($result === FALSE)
-		{
-			$this->response(array (
-					'info' => "sensor `$sensor_id` update fail"
-			), 400);
-		}
-		else
-		{
-			$this->response(array (
-					'info' => "sensor `$sensor_id` update success"
-			), 200);
-		}
-	}
-
-	/**
-	 * logically delete a sensor by change status to '0'
-	 * 
-	 * @param int $sensor_id        	
-	 */
-	public function sensor_delete($sensor_id)
-	{
-		$this->_check_sensor($sensor_id);
-		
-		$result = $this->sensor_model->delete($sensor_id);
-		if ($result == FALSE)
-			$this->response(array (
-					'info' => "delete sensor `$sensor_id` fail"
-			), 400);
-		else
-			$this->response(array (
-					'info' => "delete sensor `$sensor_id` success"
-			), 200);
 	}
 
 	/**
@@ -324,16 +224,16 @@ class Linpcloud extends REST_Controller
 		else
 		{
 			$data = array (
-					'id' => $result
+					'sensor_id' => $result
 			);
 			$this->response($data, 200);
 		}
 	}
-	
+
 	/**
 	 * get all sensors under the specific device
-	 * 
-	 * @param int $device_id        	
+	 *
+	 * @param int $device_id
 	 */
 	public function sensors_get($device_id)
 	{
@@ -344,6 +244,86 @@ class Linpcloud extends REST_Controller
 			), 400);
 		else
 			$this->response($data, 200);
+	}
+		
+	/**
+	 * get info of a specific sensor
+	 * check whether this sensor belong to the user
+	 *
+	 * @param int $sensor_id        	
+	 */
+	public function sensor_get($sensor_id)
+	{
+		$data = $this->_check_sensor($sensor_id);
+		
+		$this->response($data, 200);
+	}
+
+	/**
+	 * update sensor info
+	 *
+	 * @param int $sensor_id        	
+	 */
+	public function sensor_put($sensor_id)
+	{
+		if ($this->put('name') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `name` required'
+			), 400);
+		}
+		if ($this->put('type') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `type` required'
+			), 400);
+		}
+		
+		$device_id = $this->put('device_id');
+		$this->_check_sensor($sensor_id, $device_id);
+		
+		$input = array (
+				'name' => $this->put('name'),
+				'type' => $this->put('type'),
+				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
+				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
+				'device_id' => $this->put('device_id'),
+				'last_update' => time()
+		);
+		
+		$result = $this->sensor_model->update($sensor_id, $input);
+		if ($result === FALSE)
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` update fail"
+			), 400);
+		}
+		else
+		{
+			$this->response(array (
+					'info' => "sensor `$sensor_id` update success"
+			), 200);
+		}
+	}
+
+	/**
+	 * logically delete a sensor by change status to '0'
+	 * 
+	 * @param int $sensor_id        	
+	 */
+	public function sensor_delete($sensor_id)
+	{
+		$this->_check_sensor($sensor_id);
+		
+		$result = $this->sensor_model->delete($sensor_id);
+		if ($result == FALSE)
+			$this->response(array (
+					'info' => "delete sensor `$sensor_id` fail"
+			), 400);
+		else
+			$this->response(array (
+					'info' => "delete sensor `$sensor_id` success"
+			), 200);
 	}
 
 	/**
@@ -497,6 +477,83 @@ class Linpcloud extends REST_Controller
 		return $result;
 	}
 	
+	public function datapoint_post()
+	{
+		if ($this->post('timestamp') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `timestamp` required'
+			), 400);
+		}
+		if ($this->post('sensor_id') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `sensor_id` required'
+			), 400);
+		}
+		if($this->post('data') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `data` required'
+			), 400);
+		}
+	
+		$data = json_decode($this->post('data'), TRUE);
+		if(!is_array($data) && count($data)==0)
+		{
+			$this->response(array (
+					'error' => 'data format incorrect'
+			), 400);
+		}
+	
+		$input = array(
+				'id' => NULL,
+				'timestamp' => $this->post('timestamp'),
+				'sensor_id' => $this->post('sensor_id'),
+				'device_id' => 0,
+				'user_id' => 0
+		);
+		$sql = $this->db->insert_string('tb_datapoint', $input);
+		if($this->db->query($sql) == FALSE)
+		{
+			$this->response(array (
+					'error' => 'data insert fail'
+			), 400);
+		}
+	
+		$dp_id = $this->db->insert_id();
+	
+		$input_general = array();
+		$input_number = array();
+		foreach($data as $key => $value)
+		{
+			if(is_numeric($value))
+				$input_number[] = array(
+						'dp_id' => $dp_id,
+						'key' => $key,
+						'value' => $value
+				);
+			else
+				$input_general[] = array(
+						'dp_id' => $dp_id,
+						'key' => $key,
+						'value' => $value
+				);
+		}
+	
+		if(count($input_general)>0)
+		{
+			$this->db->insert_batch('tb_datapoint_general', $input_general);
+		}
+	
+		if(count($input_number)>0)
+		{
+			$this->db->insert_batch('tb_datapoint_number', $input_number);
+		}
+	
+		$this->response(array('dp_id' => $dp_id), 200);
+	}
+	
 	public function datapoint_get($sensor_id, $datapoint_id = FALSE)
 	{
 		//check $datapoint_id first
@@ -527,81 +584,5 @@ class Linpcloud extends REST_Controller
 		);
 		$this->response($data, 200);
 	}
-	
-	public function datapoint_post()
-	{
-		if ($this->post('timestamp') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `timestamp` required'
-			), 400);
-		}
-		if ($this->post('sensor_id') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `sensor_id` required'
-			), 400);
-		}
-		if($this->post('data') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `data` required'
-			), 400);
-		}
-		
-		$data = json_decode($this->post('data'), TRUE);
-		if(!is_array($data) && count($data)==0)
-		{
-			$this->response(array (
-					'error' => 'data format incorrect'
-			), 400);
-		}
-		
-		$input = array(
-				'id' => NULL,
-				'timestamp' => $this->post('timestamp'),
-				'sensor_id' => $this->post('sensor_id'),
-				'device_id' => 0,
-				'user_id' => 0
-		);
-		$sql = $this->db->insert_string('tb_datapoint', $input);
-		if($this->db->query($sql) == FALSE)
-		{
-			$this->response(array (
-					'error' => 'data insert fail'
-			), 400);
-		}
-		
-		$dp_id = $this->db->insert_id();
-		
-		$input_general = array();
-		$input_number = array();
-		foreach($data as $key => $value)
-		{
-			if(is_numeric($value))
-				$input_number[] = array(
-						'dp_id' => $dp_id,
-						'key' => $key,
-						'value' => $value
-				);
-			else
-				$input_general[] = array(
-						'dp_id' => $dp_id,
-						'key' => $key,
-						'value' => $value
-				);
-		}
-		
-		if(count($input_general)>0)
-		{
-			$this->db->insert_batch('tb_datapoint_general', $input_general);
-		}
-		
-		if(count($input_number)>0)
-		{
-			$this->db->insert_batch('tb_datapoint_number', $input_number);
-		}
-		
-		$this->response(array('dp_id' => $dp_id), 200);
-	}
+
 }
