@@ -9,11 +9,73 @@ class Linpcloud extends REST_Controller
 	public function __construct()
 	{
 		parent::__construct();
+		$this->load->database();
 		$this->load->model('device_model');
 		$this->load->model('sensor_model');
 		$this->load->model('user_model');
+		$this->load->model('datapoint_model');
 	}
 
+	/**
+	 * create a new device with info posted
+	 * we should check some columns to ensure the data validation
+	 * `name` required
+	 * `user_id` valid, check by database system foreign key
+	 * of course, we should check apikey first
+	 */
+	public function devices_post()
+	{
+		$user_id = $this->_check_apikey();
+	
+		if ($this->post('name') == FALSE)
+		{
+			$this->response(array (
+					'info' => 'Field `name` required'
+			), 400);
+		}
+	
+		$input = array (
+				'id' => NULL,
+				'name' => $this->post('name'),
+				'tags' => ($this->post('tags') == FALSE) ? NULL : $this->post('tags'),
+				'about' => ($this->post('about') == FALSE) ? NULL : $this->post('about'),
+				'locate' => ($this->post('locate') == FALSE) ? NULL : $this->post('locate'),
+				'user_id' => $user_id,
+				'create_time' => time(),
+				'update_time' => time(),
+				'status' => 1
+		);
+		$result = $this->device_model->create($input);
+		if ($result === FALSE)
+		{
+			$this->response(NULL, 400);
+		}
+		else
+		{
+			$data = array (
+					'id' => $result
+			);
+			$this->response($data, 200);
+		}
+	}
+	
+	/**
+	 * Get devices list owned by the user
+	 * get userid by apikey
+	 */
+	public function devices_get()
+	{
+		$user_id = $this->_check_apikey();
+	
+		$data = $this->device_model->get_devices($user_id);
+		if ($data === FALSE)
+			$this->response(array (
+					'error' => 'no device found'
+			), 400);
+		else
+			$this->response($data, 200);
+	}
+	
 	/**
 	 * get info of a specific device by device_id
 	 * we should also check user permission and whether this device belong to the user
@@ -40,49 +102,6 @@ class Linpcloud extends REST_Controller
 			$this->response(array (
 					'error' => 'out of your permission'
 			), 400);
-		}
-	}
-
-	/**
-	 * create a new device with info posted
-	 * we should check some columns to ensure the data validation
-	 * `name` required
-	 * `user_id` valid
-	 * of course, we should check apikey first
-	 */
-	public function device_post()
-	{
-		$user_id = $this->_check_apikey();
-		
-		if ($this->post('name') == FALSE)
-		{
-			$this->response(array (
-					'info' => 'Field `name` required'
-			), 400);
-		}
-		
-		$input = array (
-				'id' => NULL,
-				'name' => $this->post('name'),
-				'tags' => ($this->post('tags') == FALSE) ? NULL : $this->post('tags'),
-				'about' => ($this->post('about') == FALSE) ? NULL : $this->post('about'),
-				'locate' => ($this->post('locate') == FALSE) ? NULL : $this->post('locate'),
-				'user_id' => $user_id,
-				'create_time' => time(),
-				'update_time' => time(),
-				'status' => 1
-		);
-		$result = $this->device_model->create($input);
-		if ($result === FALSE)
-		{
-			$this->response(NULL, 400);
-		}
-		else
-		{
-			$data = array (
-					'id' => $result
-			);
-			$this->response($data, 200);
 		}
 	}
 
@@ -170,24 +189,7 @@ class Linpcloud extends REST_Controller
 			), 200);
 		}
 	}
-
-	/**
-	 * Get devices list owned by the user
-	 * get userid by apikey
-	 */
-	public function devices_get()
-	{
-		$user_id = $this->_check_apikey();
-		
-		$data = $this->device_model->get_devices($user_id);
-		if ($data === FALSE)
-			$this->response(array (
-					'error' => 'no device found'
-			), 400);
-		else
-			$this->response($data, 200);
-	}
-
+	
 	/**
 	 * get info of a specific sensor
 	 * check whether this sensor belong to the user
@@ -199,60 +201,6 @@ class Linpcloud extends REST_Controller
 		$data = $this->_check_sensor($sensor_id);
 		
 		$this->response($data, 200);
-	}
-
-	/**
-	 * create a new sensor
-	 */
-	public function sensor_post()
-	{
-		if ($this->post('name') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `name` required'
-			), 400);
-		}
-		if ($this->post('type') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `type` required'
-			), 400);
-		}
-		if ($this->post('device_id') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `device_id` required'
-			), 400);
-		}
-		
-		$device_id = $this->post('device_id');
-		$this->_check_device($device_id);
-		
-		$input = array (
-				'id' => NULL,
-				'name' => $this->post('name'),
-				'type' => $this->post('type'),
-				'tags' => ($this->post('tags') == FALSE) ? NULL : $this->post('tags'),
-				'about' => ($this->post('about') == FALSE) ? NULL : $this->post('about'),
-				'device_id' => $this->post('device_id'),
-				'last_update' => time(),
-				'last_data' => NULL,
-				'status' => 1
-		);
-		$result = $this->sensor_model->create($input);
-		if ($result === FALSE)
-		{
-			$this->response(array (
-					'info' => 'sensor created fail'
-			), 400);
-		}
-		else
-		{
-			$data = array (
-					'id' => $result
-			);
-			$this->response($data, 200);
-		}
 	}
 
 	/**
@@ -328,6 +276,60 @@ class Linpcloud extends REST_Controller
 			), 200);
 	}
 
+	/**
+	 * create a new sensor
+	 */
+	public function sensors_post()
+	{
+		if ($this->post('name') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `name` required'
+			), 400);
+		}
+		if ($this->post('type') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `type` required'
+			), 400);
+		}
+		if ($this->post('device_id') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `device_id` required'
+			), 400);
+		}
+	
+		$device_id = $this->post('device_id');
+		$this->_check_device($device_id);
+	
+		$input = array (
+				'id' => NULL,
+				'name' => $this->post('name'),
+				'type' => $this->post('type'),
+				'tags' => ($this->post('tags') == FALSE) ? NULL : $this->post('tags'),
+				'about' => ($this->post('about') == FALSE) ? NULL : $this->post('about'),
+				'device_id' => $this->post('device_id'),
+				'last_update' => time(),
+				'last_data' => NULL,
+				'status' => 1
+		);
+		$result = $this->sensor_model->create($input);
+		if ($result === FALSE)
+		{
+			$this->response(array (
+					'info' => 'sensor created fail'
+			), 400);
+		}
+		else
+		{
+			$data = array (
+					'id' => $result
+			);
+			$this->response($data, 200);
+		}
+	}
+	
 	/**
 	 * get all sensors under the specific device
 	 * 
@@ -412,7 +414,7 @@ class Linpcloud extends REST_Controller
 	}
 
 	/**
-	 * check apikey in the header, and get user_id
+	 * check apikey in the HTTP header, and get user_id
 	 *
 	 * @return int user_id
 	 */
@@ -422,7 +424,7 @@ class Linpcloud extends REST_Controller
 		if ($apikey === FALSE)
 		{
 			$this->response(array (
-					'info' => 'header `apikey` lost, please login agian'
+					'info' => 'http header `apikey` lost, please login agian'
 			), 400);
 		}
 		
@@ -493,5 +495,113 @@ class Linpcloud extends REST_Controller
 		$this->_check_device($result['device_id']);
 		
 		return $result;
+	}
+	
+	public function datapoint_get($sensor_id, $datapoint_id = FALSE)
+	{
+		//check $datapoint_id first
+		
+		$sql = "SELECT * FROM tb_datapoint WHERE sensor_id='$sensor_id' ORDER BY `timestamp` DESC LIMIT 1";
+		$datapoint = $this->db->query($sql)->first_row('array');
+		
+		$dp_id = $datapoint['id'];
+		$sql = "SELECT `value`,`key` FROM tb_datapoint_general WHERE dp_id='$dp_id'";
+		$datapoint_gen = $this->db->query($sql)->result_array();
+		
+		$sql = "SELECT `value`,`key` FROM tb_datapoint_number WHERE dp_id='$dp_id'";
+		$datapoint_num = $this->db->query($sql)->result_array();
+		
+		$datapoint_all = array_merge($datapoint_gen, $datapoint_num);
+		
+		$datapoint_data = array();
+		foreach($datapoint_all as $row){
+			$datapoint_data[$row['key']] = $row['value'];
+		}
+		//exit(json_encode($datapoint_data));
+		
+		$data = array(
+				'id' => $dp_id,
+				'timestamp' => $datapoint['timestamp'],
+				'sensor_id' => $sensor_id,
+				'data' => $datapoint_data
+		);
+		$this->response($data, 200);
+	}
+	
+	public function datapoint_post()
+	{
+		if ($this->post('timestamp') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `timestamp` required'
+			), 400);
+		}
+		if ($this->post('sensor_id') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `sensor_id` required'
+			), 400);
+		}
+		if($this->post('data') == FALSE)
+		{
+			$this->response(array (
+					'error' => 'Field `data` required'
+			), 400);
+		}
+		
+		$data = json_decode($this->post('data'), TRUE);
+		if(!is_array($data) && count($data)==0)
+		{
+			$this->response(array (
+					'error' => 'data format incorrect'
+			), 400);
+		}
+		
+		$input = array(
+				'id' => NULL,
+				'timestamp' => $this->post('timestamp'),
+				'sensor_id' => $this->post('sensor_id'),
+				'device_id' => 0,
+				'user_id' => 0
+		);
+		$sql = $this->db->insert_string('tb_datapoint', $input);
+		if($this->db->query($sql) == FALSE)
+		{
+			$this->response(array (
+					'error' => 'data insert fail'
+			), 400);
+		}
+		
+		$dp_id = $this->db->insert_id();
+		
+		$input_general = array();
+		$input_number = array();
+		foreach($data as $key => $value)
+		{
+			if(is_numeric($value))
+				$input_number[] = array(
+						'dp_id' => $dp_id,
+						'key' => $key,
+						'value' => $value
+				);
+			else
+				$input_general[] = array(
+						'dp_id' => $dp_id,
+						'key' => $key,
+						'value' => $value
+				);
+		}
+		
+		if(count($input_general)>0)
+		{
+			$this->db->insert_batch('tb_datapoint_general', $input_general);
+		}
+		
+		if(count($input_number)>0)
+		{
+			$this->db->insert_batch('tb_datapoint_number', $input_number);
+		}
+		
+		$this->response(array('dp_id' => $dp_id), 200);
 	}
 }

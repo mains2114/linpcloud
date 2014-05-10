@@ -1,5 +1,5 @@
 <?php
-class Device_model extends CI_Model
+class Datapoint_model extends CI_Model
 {
 
 	public function __construct()
