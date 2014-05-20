@@ -600,38 +600,56 @@ class Linpcloud extends REST_Controller
 		
 	} 
 
-	public function datapoints_get($sensor_id = FALSE, $start = FALSE, $end = FALSE, $interval = FALSE)
+	public function datapoints_get($type, $id)
 	{
-		if($sensor_id == FALSE)
+		//get data of all sensors under a specific device
+		if(strtoupper($type) == 'DEVICE')
+		{
+			$this->_check_device($id);
+			
+			$sql = "SELECT id,last_update,last_data FROM tb_sensor WHERE device_id = $id AND `status` = 1";
+			$result = $this->db->query($sql);
+			$data = $result->result_array();
+			$this->response($data, 200);
+		}
+		//get history data of a specific sensor
+		else if(strtoupper($type) == 'SENSOR')
+		{
+			$this->_check_sensor($id);
+			
+			$end = time();//now
+			$start = $end - 60*60;//an hour
+			$interval = 60;//60 seconds, greater than 10
+			//check history params
+			if($this->get('start') != FALSE)
+			{
+				$start = $this->get('start');
+			}
+			if($this->get('end') != FALSE)
+			{
+				$start = $this->get('end');
+			}
+			if($this->get('interval') != FALSE)
+			{
+				$start = $this->get('interval');
+			}
+			
+			$sql = "SELECT * FROM tb_datapoint_lite WHERE `sensor_id`=$id AND `timestamp` BETWEEN $start AND $end AND (`timestamp`-$start)%$interval<=30 ORDER BY `timestamp` ASC";
+			$result = $this->db->query($sql);
+			$data = $result->result_array();
+			/* $data['start'] = $start;
+			$data['end'] = $end;
+			$data['interval'] = $interval;
+			$data['sql'] = $sql; */
+			$this->response($data, 200);
+			
+		}
+		//lost parameter issue
+		else
 		{
 			$this->response(array (
-					'info' => 'Lost parameter `sensor_id`'
+					'info' => 'Lost parameter `$type`'
 			), 400);
 		}
-		
-		if($start == FALSE)
-		{
-			$end = time();
-			$start = $end - 60*60;
-		}
-		else if($end == FALSE)
-		{
-			$end = time();
-		}
-		
-		if($interval == FALSE)
-		{
-			$interval = 60;
-		}
-		
-		$sql = "SELECT * FROM tb_datapoint_lite WHERE `sensor_id`=$sensor_id AND `timestamp` BETWEEN $start AND $end AND (`timestamp`-$start)%$interval<=30 ORDER BY `timestamp` ASC";
-		$result = $this->db->query($sql);
-		$output = $result->result_array();
-		/* $output['start'] = $start;
-		$output['end'] = $end;
-		$output['interval'] = $interval;
-		$output['sql'] = $sql; */
-		$this->response($output, 200);
 	}
-	
 }
