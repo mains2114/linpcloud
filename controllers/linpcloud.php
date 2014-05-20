@@ -26,14 +26,14 @@ class Linpcloud extends REST_Controller
 	public function devices_post()
 	{
 		$user_id = $this->_check_apikey();
-	
+		
 		if ($this->post('name') == FALSE)
 		{
 			$this->response(array (
 					'info' => 'Field `name` required'
 			), 400);
 		}
-	
+		
 		$input = array (
 				'id' => NULL,
 				'name' => $this->post('name'),
@@ -58,7 +58,7 @@ class Linpcloud extends REST_Controller
 			$this->response($data, 200);
 		}
 	}
-	
+
 	/**
 	 * Get devices list owned by the user
 	 * get userid by apikey
@@ -66,7 +66,7 @@ class Linpcloud extends REST_Controller
 	public function devices_get()
 	{
 		$user_id = $this->_check_apikey();
-	
+		
 		$data = $this->device_model->get_devices($user_id);
 		if ($data === FALSE)
 			$this->response(array (
@@ -75,7 +75,7 @@ class Linpcloud extends REST_Controller
 		else
 			$this->response($data, 200);
 	}
-	
+
 	/**
 	 * get info of a specific device by device_id
 	 * we should also check user permission and whether this device belong to the user
@@ -199,10 +199,10 @@ class Linpcloud extends REST_Controller
 					'error' => 'Field `device_id` required'
 			), 400);
 		}
-	
+		
 		$device_id = $this->post('device_id');
 		$this->_check_device($device_id);
-	
+		
 		$input = array (
 				'id' => NULL,
 				'name' => $this->post('name'),
@@ -210,7 +210,7 @@ class Linpcloud extends REST_Controller
 				'tags' => ($this->post('tags') == FALSE) ? NULL : $this->post('tags'),
 				'about' => ($this->post('about') == FALSE) ? NULL : $this->post('about'),
 				'device_id' => $this->post('device_id'),
-				'last_update' => time(),
+				'last_update' => NULL,
 				'last_data' => NULL,
 				'status' => 1
 		);
@@ -233,7 +233,7 @@ class Linpcloud extends REST_Controller
 	/**
 	 * get all sensors under the specific device
 	 *
-	 * @param int $device_id
+	 * @param int $device_id        	
 	 */
 	public function sensors_get($device_id)
 	{
@@ -245,7 +245,7 @@ class Linpcloud extends REST_Controller
 		else
 			$this->response($data, 200);
 	}
-		
+
 	/**
 	 * get info of a specific sensor
 	 * check whether this sensor belong to the user
@@ -286,9 +286,8 @@ class Linpcloud extends REST_Controller
 				'name' => $this->put('name'),
 				'type' => $this->put('type'),
 				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
-				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
-				'device_id' => $this->put('device_id'),
-				'last_update' => time()
+				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about')
+				//'device_id' => $this->put('device_id'),
 		);
 		
 		$result = $this->sensor_model->update($sensor_id, $input);
@@ -308,7 +307,7 @@ class Linpcloud extends REST_Controller
 
 	/**
 	 * logically delete a sensor by change status to '0'
-	 * 
+	 *
 	 * @param int $sensor_id        	
 	 */
 	public function sensor_delete($sensor_id)
@@ -386,7 +385,7 @@ class Linpcloud extends REST_Controller
 		
 		$data = array (
 				'info' => 'Login Success',
-				'userid' => $result['id'],
+				'id' => $result['id'],
 				'username' => $result['username'],
 				'apikey' => $result['apikey']
 		);
@@ -476,113 +475,157 @@ class Linpcloud extends REST_Controller
 		
 		return $result;
 	}
-	
+
+	/**
+	 * create a datapoint for a sensor
+	 * param to post:
+	 * @param int sensor_id
+	 * @param string value
+	 */
 	public function datapoint_post()
 	{
-		if ($this->post('timestamp') == FALSE)
-		{
-			$this->response(array (
-					'error' => 'Field `timestamp` required'
-			), 400);
-		}
+		//check form field
 		if ($this->post('sensor_id') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `sensor_id` required'
+					'info' => 'Field `sensor_id` required'
 			), 400);
 		}
-		if($this->post('data') == FALSE)
+		
+		//check user's permission and get sensor info
+		$sensor = $this->_check_sensor($this->post('sensor_id'));
+		
+		//check whether value is null
+		if ($this->post('value') === FALSE or $this->post('value') === '')
 		{
 			$this->response(array (
-					'error' => 'Field `data` required'
+					'info' => 'Field `value` required'
 			), 400);
 		}
-	
-		$data = json_decode($this->post('data'), TRUE);
-		if(!is_array($data) && count($data)==0)
-		{
-			$this->response(array (
-					'error' => 'data format incorrect'
-			), 400);
-		}
-	
-		$input = array(
+		
+		$input = array (
 				'id' => NULL,
-				'timestamp' => $this->post('timestamp'),
 				'sensor_id' => $this->post('sensor_id'),
-				'device_id' => 0,
-				'user_id' => 0
+				'timestamp' => time(),
+				'value' => $this->post('value')
 		);
-		$sql = $this->db->insert_string('tb_datapoint', $input);
-		if($this->db->query($sql) == FALSE)
+		$sql = $this->db->insert_string('tb_datapoint_lite', $input);
+		$result = $this->db->query($sql);
+		if ($result == FALSE)
 		{
 			$this->response(array (
-					'error' => 'data insert fail'
+					'info' => 'create datapoint fail'
 			), 400);
 		}
-	
-		$dp_id = $this->db->insert_id();
-	
-		$input_general = array();
-		$input_number = array();
-		foreach($data as $key => $value)
+		else 
 		{
-			if(is_numeric($value))
-				$input_number[] = array(
-						'dp_id' => $dp_id,
-						'key' => $key,
-						'value' => $value
-				);
-			else
-				$input_general[] = array(
-						'dp_id' => $dp_id,
-						'key' => $key,
-						'value' => $value
-				);
+			$datapoint_id = $this->db->insert_id();
+			$update = array(
+					'last_update' => time(),
+					'last_data' => $this->post('value')
+			);
+			$where = array(
+					'id' => $this->post('sensor_id')
+			);
+			$sql = $this->db->update_string('tb_sensor', $update, $where);
+			$this->db->query($sql);
+			$this->response(array (
+					'info' => 'create datapoint success',
+					'datapoint_id' => $datapoint_id
+			), 200);
 		}
-	
-		if(count($input_general)>0)
-		{
-			$this->db->insert_batch('tb_datapoint_general', $input_general);
-		}
-	
-		if(count($input_number)>0)
-		{
-			$this->db->insert_batch('tb_datapoint_number', $input_number);
-		}
-	
-		$this->response(array('dp_id' => $dp_id), 200);
 	}
 	
-	public function datapoint_get($sensor_id, $datapoint_id = FALSE)
+	/**
+	 * get the lastest datapoint of a sensor
+	 * @param int $sensor_id
+	 */
+	public function datapoint_get($sensor_id)
 	{
-		//check $datapoint_id first
-		
-		$sql = "SELECT * FROM tb_datapoint WHERE sensor_id='$sensor_id' ORDER BY `timestamp` DESC LIMIT 1";
-		$datapoint = $this->db->query($sql)->first_row('array');
-		
-		$dp_id = $datapoint['id'];
-		$sql = "SELECT `value`,`key` FROM tb_datapoint_general WHERE dp_id='$dp_id'";
-		$datapoint_gen = $this->db->query($sql)->result_array();
-		
-		$sql = "SELECT `value`,`key` FROM tb_datapoint_number WHERE dp_id='$dp_id'";
-		$datapoint_num = $this->db->query($sql)->result_array();
-		
-		$datapoint_all = array_merge($datapoint_gen, $datapoint_num);
-		
-		$datapoint_data = array();
-		foreach($datapoint_all as $row){
-			$datapoint_data[$row['key']] = $row['value'];
-		}
-		//exit(json_encode($datapoint_data));
-		
-		$data = array(
-				'id' => $dp_id,
-				'timestamp' => $datapoint['timestamp'],
+		// check sensor first
+		$sensor = $this->_check_sensor($sensor_id);
+
+		$data = array (
 				'sensor_id' => $sensor_id,
-				'data' => $datapoint_data
+				'timestamp' => $sensor['last_update'],
+				'value' => $sensor['last_data']
 		);
 		$this->response($data, 200);
 	}
+	
+	/**
+	 * create datapoints for duplicate sensors
+	 * data should be organized as a json object array
+	 * @param string json
+	 */
+	public function datapoints_post()
+	{
+		if ($this->post('json') == FALSE)
+		{
+			$this->response(array (
+					'info' => 'Field `json` required'
+			), 400);
+		}
+		
+		//general type sensor value has json string, so we need these procedure
+		$json_array = json_decode($this->post('json'),'array');
+		$insert_data = array();
+		$update_data = array();
+		foreach($json_array as $row)
+		{//we should check every sensor_id in the further, validation and unique
+			$insert_data[] = array(
+					'sensor_id' => $row['sensor_id'],
+					'timestamp' => time(),
+					'value' => is_array($row['value'])?json_encode($row['value']):$row['value']
+			);
+			$update_data[] = array(
+					'id' => $row['sensor_id'],
+					'last_data' => is_array($row['value'])?json_encode($row['value']):$row['value'],
+					'last_update' => time()
+			);
+		}
+		
+		$this->db->update_batch('tb_sensor', $update_data, 'id');
+		$this->db->insert_batch('tb_datapoint_lite', $insert_data);
+		
+		$this->response(array (
+				'info' => 'Datapoint created success'
+		), 200);
+		
+	} 
 
+	public function datapoints_get($sensor_id = FALSE, $start = FALSE, $end = FALSE, $interval = FALSE)
+	{
+		if($sensor_id == FALSE)
+		{
+			$this->response(array (
+					'info' => 'Lost parameter `sensor_id`'
+			), 400);
+		}
+		
+		if($start == FALSE)
+		{
+			$end = time();
+			$start = $end - 60*60;
+		}
+		else if($end == FALSE)
+		{
+			$end = time();
+		}
+		
+		if($interval == FALSE)
+		{
+			$interval = 60;
+		}
+		
+		$sql = "SELECT * FROM tb_datapoint_lite WHERE `sensor_id`=$sensor_id AND `timestamp` BETWEEN $start AND $end AND (`timestamp`-$start)%$interval<=30 ORDER BY `timestamp` ASC";
+		$result = $this->db->query($sql);
+		$output = $result->result_array();
+		/* $output['start'] = $start;
+		$output['end'] = $end;
+		$output['interval'] = $interval;
+		$output['sql'] = $sql; */
+		$this->response($output, 200);
+	}
+	
 }

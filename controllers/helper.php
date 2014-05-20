@@ -54,4 +54,44 @@ class Helper extends REST_Controller
 		);
 		$this->response($data, 200);
 	}
+	
+	function put_put()
+	{
+		$data = array (
+				'datetime' => date('Y-m-d H:m:s', time()),
+				'timestamp' => time(),
+				'params' => $this->put()
+		);
+		$this->response($data, 200);
+	}
+	
+	function post_post()
+	{
+		$data = array (
+				'datetime' => date('Y-m-d H:m:s', time()),
+				'timestamp' => time(),
+				'params' => $this->post()
+		);
+		$this->response($data, 200);
+	}
+	
+	function get_get()
+	{
+		$data = array (
+				'datetime' => date('Y-m-d H:m:s', time()),
+				'timestamp' => time(),
+				'params' => $this->get()
+		);
+		$this->response($data, 200);
+	}
+	
+	function delete_delete()
+	{
+		$data = array (
+				'datetime' => date('Y-m-d H:m:s', time()),
+				'timestamp' => time(),
+				'params' => $this->delete()
+		);
+		$this->response($data, 200);
+	}
 }
