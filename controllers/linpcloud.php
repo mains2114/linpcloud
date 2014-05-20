@@ -42,17 +42,18 @@ class Linpcloud extends REST_Controller
 				'locate' => ($this->post('locate') == FALSE) ? NULL : $this->post('locate'),
 				'user_id' => $user_id,
 				'create_time' => time(),
-				'update_time' => time(),
+				'last_active' => NULL,
 				'status' => 1
 		);
 		$result = $this->device_model->create($input);
 		if ($result === FALSE)
 		{
-			$this->response(NULL, 400);
+			$this->response(array('info' => "Create Device fail"), 400);
 		}
 		else
 		{
 			$data = array (
+					'info' => "Create Device `$result` success",
 					'device_id' => $result
 			);
 			$this->response($data, 200);
@@ -70,7 +71,7 @@ class Linpcloud extends REST_Controller
 		$data = $this->device_model->get_devices($user_id);
 		if ($data === FALSE)
 			$this->response(array (
-					'error' => 'no device found'
+					'info' => 'no device found under this user'
 			), 400);
 		else
 			$this->response($data, 200);
@@ -90,7 +91,7 @@ class Linpcloud extends REST_Controller
 		if ($data === FALSE)
 		{
 			$this->response(array (
-					'error' => 'device not found!'
+					'info' => "Device `$device_id` not found!"
 			), 400);
 		}
 		else if ($user_id == $data['user_id'])
@@ -100,7 +101,7 @@ class Linpcloud extends REST_Controller
 		else
 		{
 			$this->response(array (
-					'error' => 'out of your permission'
+					'info' => "Device `$device_id` out of your permission"
 			), 400);
 		}
 	}
@@ -125,20 +126,19 @@ class Linpcloud extends REST_Controller
 				'name' => $this->put('name'),
 				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
 				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about'),
-				'locate' => ($this->put('locate') == FALSE) ? NULL : $this->put('locate'),
-				'update_time' => time()
+				'locate' => ($this->put('locate') == FALSE) ? NULL : $this->put('locate')
 		);
 		$result = $this->device_model->update($device_id, $input);
 		if ($result === TRUE)
 		{
 			$this->response(array (
-					'info' => "delete `$device_id` info success"
+					'info' => "Update device `$device_id` info success"
 			), 200);
 		}
 		else
 		{
 			$this->response(array (
-					'info' => "update `$device_id` info fail"
+					'info' => "Update device `$device_id` info fail"
 			), 400);
 		}
 	}
@@ -156,7 +156,7 @@ class Linpcloud extends REST_Controller
 		if ($info === FALSE)
 		{
 			$this->response(array (
-					'info' => "delete `$device_id` not found"
+					'info' => "Device `$device_id` not found"
 			), 400);
 		}
 		
@@ -164,14 +164,13 @@ class Linpcloud extends REST_Controller
 		if ($result === FALSE)
 		{
 			$this->response(array (
-					'info' => "delete `$device_id` fail"
+					'info' => "Delete device `$device_id` fail"
 			), 400);
 		}
 		else
 		{
 			$this->response(array (
-					'info' => "delete `$device_id` success",
-					'device_id' => $device_id
+					'info' => "Delete device `$device_id` success"
 			), 200);
 		}
 	}
@@ -184,19 +183,19 @@ class Linpcloud extends REST_Controller
 		if ($this->post('name') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `name` required'
+					'info' => 'Field `name` required'
 			), 400);
 		}
 		if ($this->post('type') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `type` required'
+					'info' => 'Field `type` required'
 			), 400);
 		}
 		if ($this->post('device_id') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `device_id` required'
+					'info' => 'Field `device_id` required'
 			), 400);
 		}
 		
@@ -218,12 +217,13 @@ class Linpcloud extends REST_Controller
 		if ($result === FALSE)
 		{
 			$this->response(array (
-					'info' => 'sensor created fail'
+					'info' => 'Create sensor fail'
 			), 400);
 		}
 		else
 		{
 			$data = array (
+					'info' => "Create sensor `$result` success",
 					'sensor_id' => $result
 			);
 			$this->response($data, 200);
@@ -240,7 +240,7 @@ class Linpcloud extends REST_Controller
 		$data = $this->sensor_model->get_sensors($device_id);
 		if ($data === FALSE)
 			$this->response(array (
-					'info' => "no sensors found in device `$device_id`"
+					'info' => "No sensors found under device `$device_id`"
 			), 400);
 		else
 			$this->response($data, 200);
@@ -269,13 +269,13 @@ class Linpcloud extends REST_Controller
 		if ($this->put('name') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `name` required'
+					'info' => 'Field `name` required'
 			), 400);
 		}
 		if ($this->put('type') == FALSE)
 		{
 			$this->response(array (
-					'error' => 'Field `type` required'
+					'info' => 'Field `type` required'
 			), 400);
 		}
 		
@@ -287,20 +287,19 @@ class Linpcloud extends REST_Controller
 				'type' => $this->put('type'),
 				'tags' => ($this->put('tags') == FALSE) ? NULL : $this->put('tags'),
 				'about' => ($this->put('about') == FALSE) ? NULL : $this->put('about')
-				//'device_id' => $this->put('device_id'),
 		);
 		
 		$result = $this->sensor_model->update($sensor_id, $input);
 		if ($result === FALSE)
 		{
 			$this->response(array (
-					'info' => "sensor `$sensor_id` update fail"
+					'info' => "Sensor `$sensor_id` update fail"
 			), 400);
 		}
 		else
 		{
 			$this->response(array (
-					'info' => "sensor `$sensor_id` update success"
+					'info' => "Sensor `$sensor_id` update success"
 			), 200);
 		}
 	}
@@ -317,11 +316,11 @@ class Linpcloud extends REST_Controller
 		$result = $this->sensor_model->delete($sensor_id);
 		if ($result == FALSE)
 			$this->response(array (
-					'info' => "delete sensor `$sensor_id` fail"
+					'info' => "Delete sensor `$sensor_id` fail"
 			), 400);
 		else
 			$this->response(array (
-					'info' => "delete sensor `$sensor_id` success"
+					'info' => "Delete sensor `$sensor_id` success"
 			), 200);
 	}
 
@@ -558,7 +557,7 @@ class Linpcloud extends REST_Controller
 	 * data should be organized as a json object array
 	 * @param string json
 	 */
-	public function datapoints_post()
+	public function datapoints_post($device_id = FALSE)
 	{
 		if ($this->post('json') == FALSE)
 		{
@@ -567,8 +566,15 @@ class Linpcloud extends REST_Controller
 			), 400);
 		}
 		
+		if($device_id != FALSE)
+		{
+			$time = time();
+			$sql = "UPDATE tb_device SET last_active='$time' WHERE id='$device_id'";
+			$this->db->query($sql);
+		}
+		
 		//general type sensor value has json string, so we need these procedure
-		$json_array = json_decode($this->post('json'),'array');
+		$json_array = json_decode($this->post('json'), 'array');
 		$insert_data = array();
 		$update_data = array();
 		foreach($json_array as $row)

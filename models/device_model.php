@@ -81,7 +81,6 @@ class Device_model extends CI_Model
 		
 		$where = "`id`='$device_id'";
 		$data = array (
-				'update_time' => time(),
 				'status' => 0
 		);
 		$sql = $this->db->update_string('tb_device', $data, $where);
