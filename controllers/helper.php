@@ -46,11 +46,14 @@ class Helper extends REST_Controller
 		}
 	}
 
-	function timestamp_get()
+	function timestamp_get($timestamp = FALSE)
 	{
+		if($timestamp == FALSE)
+			$timestamp = time();
+		
 		$data = array (
-				'datetime' => date('Y-m-d H:m:s', time()),
-				'timestamp' => time()
+				'datetime' => date('Y-m-d H:i:s', $timestamp),
+				'timestamp' => $timestamp
 		);
 		$this->response($data, 200);
 	}
